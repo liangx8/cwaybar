@@ -7,6 +7,7 @@ typedef struct strlist strlist;
 
 strlist *strlist_create(void);
 int strlist_add(strlist *list, const char *value);
+int strlist_add_after_transfer(strlist *list, const char *value);
 void strlist_destroy(strlist *list);
 size_t strlist_size(const strlist *list);
 const char *strlist_get(const strlist *list, size_t index);

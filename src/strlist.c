@@ -1,4 +1,5 @@
 #include "strlist.h"
+#include "strutils.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -134,6 +135,69 @@ int strlist_add(strlist *list, const char *value)
     list->str_count++;
     list->buffer_size = needed;
     return 0;
+}
+
+int strlist_add_after_transfer(strlist *list, const char *value)
+{
+    static const char placeholder[] = "{home}";
+    const char *home;
+    const char *cursor;
+    size_t home_occurrences = 0;
+    size_t value_length;
+    size_t capacity;
+    size_t remaining;
+    char *transferred;
+    struct HOLDER_REPLACE holders[] = {
+        {placeholder, NULL},
+        {NULL, NULL}
+    };
+
+    if (!list || !value) {
+        return -1;
+    }
+
+    home = getenv("HOME");
+    if (!home) {
+        if (strstr(value, placeholder)) {
+            return -1;
+        }
+        home = "";
+    }
+    holders[0].replace = home;
+
+    value_length = strlen(value);
+    cursor = value;
+    while ((cursor = strstr(cursor, placeholder)) != NULL) {
+        if (home_occurrences == SIZE_MAX) {
+            return -1;
+        }
+        home_occurrences++;
+        cursor += sizeof(placeholder) - 1;
+    }
+
+    size_t home_length = strlen(home);
+    if (home_length != 0 &&
+        home_occurrences > (SIZE_MAX - value_length) / home_length) {
+        return -1;
+    }
+    capacity = value_length + home_occurrences * home_length;
+    if (capacity > SIZE_MAX - STRLIST_ALIGNMENT) {
+        return -1;
+    }
+    capacity += STRLIST_ALIGNMENT;
+
+    transferred = malloc(capacity);
+    if (!transferred) {
+        return -1;
+    }
+
+    remaining = capacity;
+    int result = str_transfer(transferred, &remaining, value, holders);
+    if (result == 0) {
+        result = strlist_add(list, transferred);
+    }
+    free(transferred);
+    return result;
 }
 
 size_t strlist_size(const strlist *list)

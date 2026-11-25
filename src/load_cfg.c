@@ -19,13 +19,13 @@ struct CFG_DATA load_cfg(const char *cfgname)
     toml_datum_t log_file=toml_seek(result.toptab,"log.file");
     if(log_file.type==TOML_STRING){
         log_info(L"log file:%s",log_file.u.s);
-        strlist_add(cfg.list,log_file.u.s); // 0
+        strlist_add_after_transfer(cfg.list,log_file.u.s); // 0
         logname=strlist_get(cfg.list,0);
     }
     toml_datum_t wallpaper_path=toml_seek(result.toptab,"wallpaper.path");
     if(wallpaper_path.type==TOML_STRING){
         log_info(L"wallpaper path:%s",wallpaper_path.u.s);
-        strlist_add(cfg.list,wallpaper_path.u.s); // 1
+        strlist_add_after_transfer(cfg.list,wallpaper_path.u.s); // 1
     }
     toml_datum_t wallpaper_count_total=toml_seek(result.toptab,"wallpaper.count_total");
     if(wallpaper_count_total.type==TOML_INT64){
