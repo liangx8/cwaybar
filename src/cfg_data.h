@@ -2,8 +2,10 @@
 #define CFG_DATA_H
 #include "strlist.h"
 struct CFG_DATA{
-    const char* logname;
-    const char* wallpaper_path;
+    const char *logname;
+    const char *wallpaper_path;
+    const char *rename_dir;
+    const char *rename_lead;
     strlist *list;
     int wallpaper_count_total;
     int status;

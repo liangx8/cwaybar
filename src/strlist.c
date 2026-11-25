@@ -141,63 +141,53 @@ int strlist_add_after_transfer(strlist *list, const char *value)
 {
     static const char placeholder[] = "{home}";
     const char *home;
-    const char *cursor;
-    size_t home_occurrences = 0;
-    size_t value_length;
-    size_t capacity;
-    size_t remaining;
-    char *transferred;
-    struct HOLDER_REPLACE holders[] = {
-        {placeholder, NULL},
-        {NULL, NULL}
-    };
+    ssize_t required_size;
+    size_t storage_size;
+    size_t needed;
 
     if (!list || !value) {
         return -1;
     }
 
+    if (!strstr(value, placeholder)) {
+        return strlist_add(list, value);
+    }
+
     home = getenv("HOME");
     if (!home) {
-        if (strstr(value, placeholder)) {
-            return -1;
-        }
-        home = "";
-    }
-    holders[0].replace = home;
-
-    value_length = strlen(value);
-    cursor = value;
-    while ((cursor = strstr(cursor, placeholder)) != NULL) {
-        if (home_occurrences == SIZE_MAX) {
-            return -1;
-        }
-        home_occurrences++;
-        cursor += sizeof(placeholder) - 1;
-    }
-
-    size_t home_length = strlen(home);
-    if (home_length != 0 &&
-        home_occurrences > (SIZE_MAX - value_length) / home_length) {
-        return -1;
-    }
-    capacity = value_length + home_occurrences * home_length;
-    if (capacity > SIZE_MAX - STRLIST_ALIGNMENT) {
-        return -1;
-    }
-    capacity += STRLIST_ALIGNMENT;
-
-    transferred = malloc(capacity);
-    if (!transferred) {
         return -1;
     }
 
-    remaining = capacity;
-    int result = str_transfer(transferred, &remaining, value, holders);
-    if (result == 0) {
-        result = strlist_add(list, transferred);
+    struct HOLDER_REPLACE holders[] = {
+        {placeholder, home},
+        {NULL, NULL}
+    };
+    required_size = str_transfer(NULL, 0, value, holders);
+    if (required_size < 0) {
+        return -1;
     }
-    free(transferred);
-    return result;
+    storage_size = (size_t)required_size;
+    if (list->buffer_size > SIZE_MAX - storage_size) {
+        return -1;
+    }
+    needed = list->buffer_size + storage_size;
+
+    if (ensure_offsets_capacity(list) != 0 ||
+        ensure_buffer_capacity(list, needed) != 0) {
+        return -1;
+    }
+
+    if (str_transfer(list->buffer + list->buffer_size,
+                     storage_size,
+                     value,
+                     holders) < 0) {
+        return -1;
+    }
+
+    list->offsets[list->str_count] = list->buffer_size;
+    list->str_count++;
+    list->buffer_size = needed;
+    return 0;
 }
 
 size_t strlist_size(const strlist *list)
@@ -267,4 +257,3 @@ void strlist_destroy(strlist *list)
     free(list->buffer);
     free(list);
 }
-

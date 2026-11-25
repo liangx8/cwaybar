@@ -92,10 +92,10 @@ int str_replace_home(char *dst,size_t *dst_size,const char *cstr)
     return 0;
 }
 
-int str_transfer(char *dst,
-                 size_t *dst_size,
-                 const char *src,
-                 const struct HOLDER_REPLACE hr[])
+ssize_t str_transfer(char *dst,
+                     size_t dst_size,
+                     const char *src,
+                     const struct HOLDER_REPLACE hr[])
 {
     const size_t alignment = 8;
     const char *cursor;
@@ -103,8 +103,8 @@ int str_transfer(char *dst,
     size_t aligned_size;
     size_t written = 0;
 
-    if (!dst || !dst_size || !src || !hr ||
-        ((uintptr_t)dst & (alignment - 1)) != 0) {
+    if (!src || !hr ||
+        (dst && ((uintptr_t)dst & (alignment - 1)) != 0)) {
         return -1;
     }
 
@@ -139,7 +139,15 @@ int str_transfer(char *dst,
         return -1;
     }
     aligned_size = (output_length + 1 + alignment - 1) & ~(alignment - 1);
-    if (aligned_size > *dst_size) {
+    if (aligned_size > (size_t)PTRDIFF_MAX) {
+        return -1;
+    }
+
+    if (!dst) {
+        return (ssize_t)aligned_size;
+    }
+
+    if (aligned_size > dst_size) {
         return -1;
     }
 
@@ -163,6 +171,5 @@ int str_transfer(char *dst,
 
     dst[written] = '\0';
     memset(dst + written + 1, 0, aligned_size - written - 1);
-    *dst_size -= aligned_size;
-    return 0;
+    return (ssize_t)aligned_size;
 }

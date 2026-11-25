@@ -27,12 +27,24 @@ struct CFG_DATA load_cfg(const char *cfgname)
         log_info(L"wallpaper path:%s",wallpaper_path.u.s);
         strlist_add_after_transfer(cfg.list,wallpaper_path.u.s); // 1
     }
+    toml_datum_t rename_dir=toml_seek(result.toptab,"rename.dir");
+    if(rename_dir.type==TOML_STRING){
+        log_info(L"rename dir:%s",rename_dir.u.s);
+        strlist_add_after_transfer(cfg.list,rename_dir.u.s); // 2
+    }
+    toml_datum_t rename_lead=toml_seek(result.toptab,"rename.lead");
+    if(rename_lead.type==TOML_STRING){
+        log_info(L"rename lead:%s",rename_lead.u.s);
+        strlist_add_after_transfer(cfg.list,rename_lead.u.s); // 3
+    }
     toml_datum_t wallpaper_count_total=toml_seek(result.toptab,"wallpaper.count_total");
     if(wallpaper_count_total.type==TOML_INT64){
         cfg.wallpaper_count_total=wallpaper_count_total.u.int64;
     }
     cfg.wallpaper_path=strlist_get(cfg.list,1);
     cfg.logname=strlist_get(cfg.list,0);
+    cfg.rename_dir=strlist_get(cfg.list,2);
+    cfg.rename_lead=strlist_get(cfg.list,3);
     toml_free(result);
     cfg.status=STATUS_OK;
     return cfg;
