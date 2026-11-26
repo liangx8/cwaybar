@@ -81,20 +81,20 @@ int walk_directory(const char *dirname, strlist *list)
 const char rm1[]="【哲风壁纸】";
 const char repl[]="girls";
 #define OUT_MAX 512
-void concat_out(char *out,const char *dir,const char *lead,const char *file,size_t seq)
+void concat_out(char *out,const char *lead,const char *file,size_t seq)
 {
     const size_t rm1_length=sizeof(rm1)-1;
     const size_t repl_length=sizeof(repl)-1;
     if(strncmp(rm1,file,rm1_length)==0){
-        snprintf(out,OUT_MAX,"%s/%s%04ld_%s",dir,lead,seq,file+rm1_length);
+        snprintf(out,OUT_MAX,"%s%04ld_%s",lead,seq,file+rm1_length);
         return;
     }
     if(strncmp(repl,file,repl_length)==0){
         size_t fs=strlen(file);
-        snprintf(out,OUT_MAX,"%s/%s%04ld_girls%s",dir,lead,seq,file+fs-4);
+        snprintf(out,OUT_MAX,"%s%04ld_girls%s",lead,seq,file+fs-4);
         return;
     }
-    snprintf(out,OUT_MAX,"%s/%s%04ld_%s",dir,lead,seq,file);
+    snprintf(out,OUT_MAX,"%s%04ld_%s",lead,seq,file);
     
 } 
 int rename_action(int argc, char *argv[],void *obj)
@@ -110,7 +110,13 @@ int rename_action(int argc, char *argv[],void *obj)
     if (!list) {
         return -1;
     }
-
+    const size_t dir_length=strlen(cfg->rename_dir);
+    memcpy(out,cfg->rename_dir,dir_length);
+    const int needs_separator=out[dir_length-1]!='/';
+    const int offset=dir_length + needs_separator;
+    if(needs_separator){
+        out[dir_length]='/';
+    }
     int result = walk_directory(cfg->rename_dir, list);
     if(result){
         log_info(L"walk through dir %s error",cfg->rename_dir);
@@ -120,8 +126,8 @@ int rename_action(int argc, char *argv[],void *obj)
     size_t size=strlist_size(list);
     for(size_t ix=0;ix<size;ix++){
         join_path(outs,cfg->rename_dir,strlist_get(list,ix));
-        concat_out(out,cfg->rename_dir,cfg->rename_lead,strlist_get(list,ix),ix);
-        wprintf(L"%s\n=>%s\n",outs,out);
+        concat_out(out+offset,cfg->rename_lead,strlist_get(list,ix),ix);
+        wprintf(L"%s\n  \033[34m%s\033[0m\n",outs,out);
     }
     wprintf(L"总共有%d\n",size);
     strlist_destroy(list);
